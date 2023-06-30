@@ -5,7 +5,7 @@ from tkinter import Tk, Label
 from PIL import ImageTk, Image
 
 # URL of the Firebase Storage image
-firebase_image_url = 'https://firebasestorage.googleapis.com/v0/b/gateactivities.appspot.com/o/icon.png?alt=media&token=7200bf70-d669-4efd-a869-cd6b5f156cd3'
+firebase_image_url = 'https://firebasestorage.googleapis.com/v0/b/gateactivities.appspot.com/o/1688035075196?alt=media&token=1ec0434c-c362-489c-8a54-92d0a2cfd40d'
 
 # Retrieve the image from the URL
 response = requests.get(firebase_image_url)
