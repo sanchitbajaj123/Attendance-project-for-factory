@@ -14,8 +14,14 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 #import subprocess
 import webbrowser
-from io import BytesIO
-import requests
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
+import webbrowser
+import datetime
 #import pyautogui
 
 
@@ -28,6 +34,9 @@ class main:
         self.root.resizable(False, False)
         self.cred = credentials.Certificate('gateactivities.json')
         firebase_admin.initialize_app(self.cred)
+        cred2 = credentials.Certificate('gsheets.json')
+
+        firebase_admin.initialize_app(cred2,name='second-app')
         
         self.db = firestore.client()
         self.collection_ref = self.db.collection('EmployeeDetails')
@@ -50,6 +59,19 @@ class main:
         button2.config(width=19, height=2, font=("Arial", 12,'bold'))
         button2.place(x=2,y=265)
 
+        button3 = tk.Button(self.sidefr, text="GENERATE\nGOOGLE SHEETS",command=self.frame_3)
+
+# Configure the button's appearance
+        button3.config(width=19, height=2, font=("Arial", 12,'bold'))
+        button3.place(x=3,y=330)
+
+        button3 = tk.Button(self.sidefr, text="GENERATE\nGOOGLE SHEETS",command=self.frame_3)
+
+# Configure the button's appearance
+        button4 = tk.Button(self.sidefr, text="VIEW\nGOOGLE SHEETS",command=self.frame_4)
+
+        button4.config(width=19, height=2, font=("Arial", 12,'bold'))
+        button4.place(x=4,y=395)
 # Place the button in the window
         
         image = Image.open("user.png")
@@ -65,13 +87,20 @@ class main:
         lb.place(x=3,y=150)
 
         self.frame1 = Frame(self.root, height=801, width=1456,highlightthickness=7,highlightbackground="black", bg="#CDCDC1")
-        self.subframe=Frame(self.frame1, height=600, width=1330, bg="white",highlightthickness=5,highlightbackground="blue")
+        self.subframe=Frame(self.frame1, height=595, width=1330, bg="black",highlightthickness=5,highlightbackground="blue")
 
         self.frame2 = Frame(self.root, height=801, width=1456,highlightthickness=7,highlightbackground="black", bg="#CDCDC1")
-        
+        self.frame3 = Frame(self.root, height=801, width=1456,highlightthickness=7,highlightbackground="black", bg="grey")
+        self.frame4 = Frame(self.root, height=801, width=1456,highlightthickness=7,highlightbackground="black", bg="grey")
+
+
         lb2=tk.Label(self.root,text="▇ BAJAJ ENGINEERING WORKS",font=("Helvetica", 19,"bold"),fg='RED')
         lb2.place(x=1100,y=802)
         phb= PhotoImage(file ="search.png")
+        self.pic3= PhotoImage(file ="casting.png")
+  
+        # Resizing image to fit on button
+        self.cast = self.pic3.subsample(2,1)
   
         # Resizing image to fit on button
         self.photo2 = phb.subsample(6,7)
@@ -81,12 +110,10 @@ class main:
         self.hide_frame()
         self.frame1.place(x=200, y=-2)
         self.subframe.place(x=0, y=190)
-        v=Scrollbar(self.subframe, orient='vertical',width=30)
-        v.place(x=1285, relheight=1)
         lbf1=tk.Label(self.frame1,text="*SELECT DATE :",font=("Helvetica", 19,"bold"),bg='#CDCDC1',fg='blue')
         lbf1.place(x=300,y=50)
 
-        buttonf1 = tk.Button(self.frame1, text="SELECT")
+        buttonf1 = tk.Button(self.frame1, text="SELECT",command=self.selectdate)
 
 # Configure the button's appearance
         buttonf1.config(width=19, height=2, font=("Arial", 12,'bold'),bg='blue',fg='white')
@@ -94,18 +121,201 @@ class main:
         custom_font = font.Font(weight="bold",size=20)
         lbf2=tk.Label(self.frame1,text="*ENTER NAME TO SEARCH :",font=("Helvetica", 19,"bold"),bg='#CDCDC1',fg='blue')
         lbf2.place(x=900,y=50)
-        entry = tk.Entry(self.frame1,font=custom_font,fg='grey',bg='white',highlightthickness=2, highlightbackground="sky blue")
+        self.entry = tk.Entry(self.frame1,font=custom_font,fg='grey',bg='white',highlightthickness=2, highlightbackground="sky blue")
         #entry.config(width=19, height=2)
         
-        entry.place(x=900,y=100,width=300,height=30)
+        self.entry.place(x=900,y=100,width=300,height=30)
 
 
-        button2 = tk.Button(self.frame1, image=self.photo2,width=28, height=23)
+        button2 = tk.Button(self.frame1, image=self.photo2,width=28, height=23,command=self.search2)
         button2.place(x=1200,y=101)
 
-        cal = Calendar(self.frame1, selectmode = 'day',date_pattern='dd-MM-yy')
+        self.cal = Calendar(self.frame1, selectmode = 'day',date_pattern='dd-MM-yy')
 
-        cal.place(x=20,y=5)
+        self.cal.place(x=20,y=5)
+        pic= PhotoImage(file ="refresh.png")
+  
+        # Resizing image to fit on button
+        self.photo5 = pic.subsample(2,1)
+
+        button4 = tk.Button(self.subframe,width=143, height=320,image=self.photo5,bg='black',command=self.re2)
+
+        button4.place(x=1170,y=0)
+
+
+
+        pic2= PhotoImage(file ="print.png")
+  
+        # Resizing image to fit on button
+        self.photo6 = pic2.subsample(4,3)
+        button5 = tk.Button(self.subframe,width=143, height=300,image=self.photo6,bg='white',command=self.print2)
+        button5.place(x=1170,y=280)
+        
+        self.treea = ttk.Treeview(self.subframe,show="tree")
+        self.treea["columns"] = ("ID","NAME","IN","OUT")
+        self.treea.column("#0", width=0)
+        #self.tree.column("column1", width=200)
+        self.treea.column("ID", width=50,anchor="center")
+        self.treea.column("NAME", width=373,anchor="center")
+        self.treea.column("IN", width=373,anchor="center")
+        self.treea.column("OUT", width=373,anchor="center")
+        #self.treea.heading("#0", text="ID")
+        #self.tree.heading("column1", text="ID")
+        self.treea.heading("ID", text="ID",anchor="center")
+        self.treea.heading("NAME", text="NAME",anchor="center")
+        self.treea.heading("IN", text="IN",anchor="center")
+        self.treea.heading("OUT", text="OUT",anchor="center")
+        self.treea.tag_configure("heading", font=("Arial", 20, "bold"))
+
+        style = ttk.Style()
+        style.configure("Treeview",anchor="center", borderwidth=1, font=("Arial", 15),background='white',foreground='blue',rowheight=25)
+        self.treea["show"] = "tree headings"
+        
+        self.scrollbar2 = ttk.Scrollbar(self.subframe, orient=tk.VERTICAL, command=self.treea.yview)
+        self.scrollbar2.place(x=1153, y=0, height=583)  # Position the Scrollbar next to the Treeview using place
+
+        self.treea.configure(yscrollcommand=self.scrollbar2.set)
+
+        pen = self.collection_ref.get()
+        docs = sorted(pen, key=lambda doc: doc.get('num'))
+
+        self.treea.place(x=0,y=0,height=585)
+ 
+                        
+        for doc in docs:
+                doc_data = doc.to_dict()
+                #print(doc_data)
+                #doc_id = int(doc.id)
+                #name = doc_data.get('id', '')
+                age = doc_data.get('name', '')
+                #print(age)
+                country = doc_data.get('inTime', '')
+                id=(doc_data.get('id', ''))
+                dept=doc_data.get('outTime', '')
+                
+                self.treea.insert("", tk.END, values=(id,age, country,dept))
+                self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+
+       
+                
+    def selectdate(self):
+        selected_date = self.cal.get_date()
+        
+        date_obj = datetime.datetime.strptime(selected_date, "%d-%m-%y")
+        formatted_date = date_obj.strftime("%d-%m-%Y")
+        
+        data_ref = self.db.collection("Attendance").document(formatted_date)
+        data = data_ref.get().to_dict()
+
+        
+        #print(array_data)
+
+        # Clear existing data in the TreeView if needed
+        self.treea.delete(*self.treea.get_children())
+
+        array_data1 = data["ids"]
+        array_data2 = data["names"]
+        array_data3 = data["inTime"]
+        array_data4 = data["outTime"]
+
+        for item1, item2, item3,item4 in zip(array_data1, array_data2, array_data3,array_data4):
+            self.treea.insert("", "end", values=(item1, item2, item3,item4))
+            self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+
+    def search2(self):
+        query = str(self.entry.get())
+        print(query)
+        selections = []
+        
+        flag=0
+        
+        for child in self.treea.get_children():
+            if query in self.treea.item(child)['values']:   # compare strings in  lower cases.
+                #print(self.tree.item(child)['values'])
+                selections.append(child)
+                #print(selections)
+                self.treea.selection_set(selections)
+                self.treea.focus(selections)
+                flag=1
+                #self.refresh()
+                
+
+                
+        if(flag ==0) :
+            messagebox.showerror("Error", "EMPLOYEE NAME  DOESNT EXIST \nOR\n TYPE NAME CORRECTLY", icon=messagebox.ERROR)
+            #self.refresh()
+        self.entry.delete(0, tk.END)
+
+    def re2(self):
+        self.set_frame_1() 
+
+    def print2(self):
+        value='---------------------------------'
+        itemsd = self.treea.get_children()
+        for itemd in itemsd:
+            item_values = self.treea.item(itemd)['values']
+            if value in item_values:
+                self.treea.delete(itemd)
+        data = []
+        for item in self.treea.get_children():
+            values = self.treea.item(item)["values"]
+            data.append(values)
+
+        # Define the table columns and rows
+        num_columns = len(self.treea["columns"])
+        num_rows = len(data)
+
+        # Define the column widths
+        column_widths = [100] * num_columns
+
+        # Define the row heights
+        row_height = 20
+
+        # Create a list to hold the table data
+        table_data = []
+
+        # Add column names as the first row of the table data
+        column_names = self.treea["columns"]
+        table_data.append(column_names)
+
+        # Add the data rows to the table data
+        for row in data:
+            table_data.append(row)
+
+        # Define the table style
+        table_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.black),  # Header row background color
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),  # Header row text color
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),  # Data row background color
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center align all cells
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Header row font
+            ('FONTSIZE', (0, 0), (-1, 0), 12),  # Header row font size
+            ('BOTTOMPADDING', (0, 0), (0, 0), 5),  # Header row bottom padding
+            ('TOPPADDING', (0, 0), (0, 0), 5),  # Header row top padding
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 5),  # Data row bottom padding
+            ('TOPPADDING', (0, 1), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Data row top padding
+        ])
+
+        # Create the PDF document
+        pdf_file = "attendance.pdf"
+        doc = SimpleDocTemplate(pdf_file, pagesize=letter)
+
+        # Create the table and apply the table style
+        table = Table(table_data, colWidths=column_widths, rowHeights=row_height)
+        table.setStyle(table_style)
+
+        # Build the PDF document with the table
+        elements = [table]
+        doc.build(elements)
+
+        #print("TreeView converted to PDF successfully.")
+        self.pdf_file_path2 = pdf_file
+
+        webbrowser.open_new(self.pdf_file_path2)
+
+        self.re2()
+
     def frame_2(self):
         self.hide_frame()
         self.frame2.place(x=200, y=-2)
@@ -212,9 +422,10 @@ class main:
         #print(pen)
 
         self.root2=tk.Toplevel()
-        self.root2.geometry("700x600")
+        self.root2.geometry("1000x600")
         self.root2.title("DETAILS")
-        #self.root2.resizable(False, False)
+        self.root2.configure(bg="#F2F2F2")
+        self.root2.resizable(False, False)
                         
         
         doc_data = pen.to_dict()
@@ -235,38 +446,29 @@ class main:
         e14=doc_data.get('bankAccount', '')
         e15=doc_data.get('aadhaar', '')
         e16=doc_data.get('image', '')
+        e17=doc_data.get('experience', '')
+        e18=doc_data.get('education', '')
+        e19=doc_data.get('email', '')
+        
         #print (e16)
 
-        firebase_image_url = e16
-        print(firebase_image_url)
-        #print(firebase_image_url)
-        #print(type(firebase_image_url))
+        self.firebase_image_url = e16
 
-        response = requests.get(firebase_image_url)
-        image_data = response.content
+        pic= PhotoImage(file ="Aadhar-Card.png")
+  
 
-
-        # Create a label to display the image
-
-        image = Image.open(BytesIO(image_data))
-        image.resize((400,300),resample=Image.BILINEAR)
-        photo= ImageTk.PhotoImage(image)
-        
+        photo = pic.subsample(3,4)
                 
 
-    # Resizing image to fit on button
-        #photo= phb.subsample(6,7)
 
-        image_label = tk.Button(self.root2, image=photo)
-        image_label.image = photo  # Keep a reference to the image
-        
-        
+        image_label = tk.Button(self.root2,image=photo,command=self.imagebrowse)
 
-        #image_label.pack()
-        image_label.place(x=80, y=300, width=400, height=300)  
+        image_label.image = photo
+
+        image_label.place(relx=0.5, rely=0.8, anchor="center")  
 
 
-        data = [("Name", e1), ("ID", e3), ("DEPARTMENT", e4),("CONTACT", e2),("DATE OF JOINING", e5),("VEHICLE", e6),("ADDRESS", e7),("PERMANENT ADDRESS", e8),("DOB", e9),("OTHER CONTACT", e10),("FSI-CODE", e12),("BANK ACCOUNT", e14),("PAN NUMBER", e13),("AADHAAR NO:",e15)]
+        data = [("Name", e1), ("ID", e3), ("DEPARTMENT", e4),("CONTACT", e2),("DATE OF JOINING", e5),("VEHICLE", e6),("ADDRESS", e7),("PERMANENT ADDRESS", e8),("DOB", e9),("OTHER CONTACT", e10),("IFSC-CODE", e12),("BANK ACCOUNT", e14),("PAN NUMBER", e13),("AADHAAR NO:",e15),("Experience", e18),("Education", e17),("email", e19),("Father's name", e11)]
 
         num_columns = 2
 
@@ -277,14 +479,14 @@ class main:
             col = idx % num_columns
 
             # Create label
-            label = tk.Label(self.root2, text=label_text)
+            label = tk.Label(self.root2, text=label_text,font=("Arial", 15,"bold"))
             label.grid(row=row, column=col * 2, padx=5, pady=5, sticky="e")
 
             # Create entry
-            entry = tk.Entry(self.root2)
+            entry = tk.Entry(self.root2,bg="lightgray", fg="red", font=("Arial", 15))
             entry.insert(tk.END, entry_text)
             entry.grid(row=row, column=col * 2 + 1, padx=5, pady=5, sticky="w")
-
+            entry.config(state='readonly')
                 
 
             
@@ -345,51 +547,66 @@ class main:
     def refresh(self):
         self.frame_2()
 
+
+
     def print(self):
-
-        pdf = canvas.Canvas("treeview.pdf", pagesize=letter)
-
-    # Get the data from the TreeView
         data = []
         for item in self.tree.get_children():
             values = self.tree.item(item)["values"]
             data.append(values)
 
-    # Define the table columns and rows
+        # Define the table columns and rows
         num_columns = len(self.tree["columns"])
         num_rows = len(data)
 
-    # Define the column widths
+        # Define the column widths
         column_widths = [100] * num_columns
 
-    # Define the row heights
+        # Define the row heights
         row_height = 20
 
-    # Set the font and font size for the table
-        pdf.setFont("Helvetica", 12)
+        # Create a list to hold the table data
+        table_data = []
 
-        for i, column in enumerate(self.tree["columns"]):
-            x = 30 + sum(column_widths[:i])
-            y = 770
-            pdf.drawString(x, y, column)
-            pdf.line(x, y, x, y - (num_rows * row_height) - 20)
+        # Add column names as the first row of the table data
+        column_names = self.tree["columns"]
+        table_data.append(column_names)
 
-        # Draw the table rows and dividers
-        for i, row in enumerate(data):
-            for j, value in enumerate(row):
-                x = 30 + sum(column_widths[:j])
-                y = 750 - (i * row_height)
-                pdf.drawString(x, y, str(value))
-                pdf.line(x, y, x + column_widths[j], y)
-    # Save the PDF file
-        pdf.save()
-        print("TreeView converted to PDF successfully.")
-        self.pdf_file_path = 'treeview.pdf'
+        # Add the data rows to the table data
+        for row in data:
+            table_data.append(row)
+
+        # Define the table style
+        table_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.black),  # Header row background color
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),  # Header row text color
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),  # Data row background color
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center align all cells
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Header row font
+            ('FONTSIZE', (0, 0), (-1, 0), 12),  # Header row font size
+            ('BOTTOMPADDING', (0, 0), (0, 0), 5),  # Header row bottom padding
+            ('TOPPADDING', (0, 0), (0, 0), 5),  # Header row top padding
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 5),  # Data row bottom padding
+            ('TOPPADDING', (0, 1), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Data row top padding
+        ])
+
+        # Create the PDF document
+        pdf_file = "treeview.pdf"
+        doc = SimpleDocTemplate(pdf_file, pagesize=letter)
+
+        # Create the table and apply the table style
+        table = Table(table_data, colWidths=column_widths, rowHeights=row_height)
+        table.setStyle(table_style)
+
+        # Build the PDF document with the table
+        elements = [table]
+        doc.build(elements)
+
+        #print("TreeView converted to PDF successfully.")
+        self.pdf_file_path = pdf_file
 
         webbrowser.open_new(self.pdf_file_path)
-        
-
-        #subprocess.run(['xdg-open', self.pdf_file_path])
 
 
     def search(self):
@@ -429,9 +646,162 @@ class main:
         
            
         
+    def imagebrowse(self):
+        webbrowser.open(self.firebase_image_url)
+    
+
+
+    def frame_3(self):
+        self.hide_frame()
+        self.frame3.place(x=200, y=-2)
+
+
+        button = tk.Button(self.frame3,bg='black',width=210, height=320,image=self.cast,command=self.gsheet)
+        #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
+        button.configure(relief="flat")
+        button.place(x=80,y=35)
+        lb=tk.Label(self.frame3,text="CASTING SHEET",font=("Helvetica", 19,"bold"),bg='white',fg='blue',width=14)
+        lb.place(x=80,y=359)
+        #button.grid(row=1, column=1)
+    def gsheet(self):
+
+
+        # Create a Firestore client
+        db = firestore.client(app=firebase_admin.get_app(name='second-app'))
+
+        # Authenticate and authorize Google Sheets API
+        scope = [
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/spreadsheets'
+        ]
+        credentials1 = ServiceAccountCredentials.from_json_keyfile_name('cred.json', scope)
+        client = gspread.authorize(credentials1)
+
+        # Source sheet details
+        source_sheet_id = '1BwjtmxB2Vvh6WKV9oQpfayfof7OBtMOHjLmpSFa2KeU'  # Replace with the source sheet ID
+        drive_service = build('drive', 'v3', credentials=credentials1)
+
+        # Create a new blank spreadsheet
+        new_file_metadata = {
+        'name': 'new casting sheet 1',  # Replace with the desired name for the new spreadsheet
+        'mimeType': 'application/vnd.google-apps.spreadsheet',
+        }
+        created_file = drive_service.files().create(body=new_file_metadata).execute()
+
+        # Get the ID of the new spreadsheet
+        new_spreadsheet_id = created_file['id']
+
+        print('New spreadsheet ID:', new_spreadsheet_id)
+
+        # Destination document details
+        destination_document_id = new_spreadsheet_id  # Replace with the destination document ID
+
+        # Open the source sheet
+        source_sheet = client.open_by_key(source_sheet_id)
+
+        # Get the sheet ID
+        sheet_id = source_sheet.sheet1.id
+
+        # Create a copy request
+        copy_request = {
+        'destinationSpreadsheetId': destination_document_id,
+        'sourceSheetId': sheet_id,
+        }
+
+        # Call the Google Drive API to copy the sheet to the new document
+        drive_service = build('drive', 'v3', credentials=credentials1)
+
+        # Copy the sheet to a new document
+        current_date = datetime.date.today()
+        new_document_metadata = {
+        'name': f"Casting {current_date}"  # Replace with the desired name for the new document
+            # Replace with the ID of the destination folder (optional)
+        }
+        copied_document = drive_service.files().copy(fileId=source_sheet_id, body=new_document_metadata).execute()
+
+        # Get the ID of the new document
+        new_document_id = copied_document['id']
 
 
 
+        #print('Sheet copied successfully!')
+        #print('New sheet ID:', new_document_id)
+        # Share the copied sheet for collaboration
+        drive_service.permissions().create(
+        fileId=new_document_id,
+        body={
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': 'sanchitbajaj2003@gmail.com'  # Replace with the desired collaborator email address
+        }
+        ).execute()
+        drive_service.permissions().create(
+        fileId=new_document_id,
+        body={
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': 'SupervisorBajaj@gmail.com'  # Replace with the desired collaborator email address
+        }
+        ).execute()
+
+        #print('Sheet copied and shared successfully!')
+        new_sheet_url = f'https://docs.google.com/spreadsheets/d/{new_document_id}'
+        #webbrowser.open(new_sheet_url)
+
+
+        # Specify the collection and document ID
+        collection_name = 'gsheet'
+        document_id = 'casting'
+
+        # Specify the string data
+        string_data = new_sheet_url
+
+        # Create a document reference
+        doc_ref = db.collection(collection_name).document(document_id)
+
+        # Set the string data in the document
+        doc_ref.set({'gsheet': string_data})
+        #print(string_data)
+        messagebox.showinfo("INFORMATION", "Sheet generated and shared successfully!'", icon=messagebox.INFO)
+    def frame_4(self):
+        self.hide_frame()
+        self.frame4.place(x=200, y=-2)
+
+        button = tk.Button(self.frame4,width=210, height=320,image=self.cast,command=self.view)
+        #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
+        button.configure(relief="flat")
+        button.place(x=80,y=35)
+        lb=tk.Label(self.frame4,text="VIEW \nCASTING SHEET",font=("Helvetica", 19,"bold"),bg='white',fg='blue',width=14)
+        lb.place(x=80,y=359)
+    def view(self):
+
+        '''db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
+
+        det = db2.collection("gsheet").document("casting")
+
+        pen = det.get()
+        
+        doc_data = pen.to_dict()
+        e1 = doc_data.get('gsheet', '')
+        #print(e1)
+        webbrowser.open(e1)'''
+        # Define the selected month as a string
+        selected_month = '07'  # July
+
+        # Build a query to fetch the documents matching the selected month
+        query = self.db.collection('Attendance')
+        # Execute the query and iterate over the results
+        docs = query.stream()
+
+        for doc in docs:
+            date = doc.id
+            #print("m=",date)
+            document_month = date.split('-')[1]
+
+            # Check if the document's month matches the selected month
+            if document_month == selected_month:
+                print(date)
 
 
 
@@ -439,10 +809,11 @@ class main:
         self.dframe.place_forget()
         self.frame2.place_forget()
         self.frame1.place_forget()
+        self.frame3.place_forget()
+        self.frame4.place_forget()
         
 
     
 if __name__ == '__main__':
     obj = main()
     obj.new()
-    
