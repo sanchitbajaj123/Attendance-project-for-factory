@@ -12,17 +12,16 @@ from firebase_admin import firestore
 from tkinter import ttk
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-#import subprocess
 import webbrowser
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from googleapiclient.discovery import build
+#import gspread
+#from oauth2client.service_account import ServiceAccountCredentials
+#from googleapiclient.discovery import build
 import webbrowser
 import datetime
-#import pyautogui
+
 
 
 class main:
@@ -31,10 +30,13 @@ class main:
         self.root.title("ATTENDANCE SYSTEM")
         self.root.state('zoomed')
         #self.root.geometry("800x800")
+        p1 = PhotoImage(file = 'images2/logo.png')
+  
+        self.root.iconphoto(True, p1)
         self.root.resizable(False, False)
-        self.cred = credentials.Certificate('gateactivities.json')
+        self.cred = credentials.Certificate('cred/gateactivities.json')
         firebase_admin.initialize_app(self.cred)
-        cred2 = credentials.Certificate('gsheets.json')
+        cred2 = credentials.Certificate('cred/gsheets.json')
 
         firebase_admin.initialize_app(cred2,name='second-app')
         
@@ -43,8 +45,11 @@ class main:
 
         helv36 = tkFont.Font(family='Helvetica', size=9, weight=tkFont.BOLD)
 
-        self.dframe = Frame(self.root, height=801, width=1456,bg='#FFFDD0',highlightthickness=7,highlightbackground="black")
+        self.dframe = Frame(self.root, height=801, width=1456,bg='white',highlightthickness=7,highlightbackground="black")
         self.dframe.place(x=200, y=-2)
+        pictured = PhotoImage(file="images2/logo2.png")
+        labeld = Label(self.dframe, image=pictured,bg='white')
+        labeld.place(relx=0.5, rely=0.5, anchor="center")
         self.sidefr=Frame(self.root, height=800, width=200,bg='#00047B').place(x=0,y=0)
         # Create a button
         button1 = tk.Button(self.sidefr, text="VIEW\nATTENDANCE",command=self.set_frame_1)
@@ -74,7 +79,7 @@ class main:
         button4.place(x=4,y=395)
 # Place the button in the window
         
-        image = Image.open("user.png")
+        image = Image.open("images2/user.png")
         image = image.resize((140, 160))  # Resize the image to fit the frame
 
 # Convert the image to Tkinter-compatible format
@@ -96,8 +101,8 @@ class main:
 
         lb2=tk.Label(self.root,text="▇ BAJAJ ENGINEERING WORKS",font=("Helvetica", 19,"bold"),fg='RED')
         lb2.place(x=1100,y=802)
-        phb= PhotoImage(file ="search.png")
-        self.pic3= PhotoImage(file ="casting.png")
+        phb= PhotoImage(file ="images2/search.png")
+        self.pic3= PhotoImage(file ="images2/casting.png")
   
         # Resizing image to fit on button
         self.cast = self.pic3.subsample(2,1)
@@ -112,6 +117,12 @@ class main:
         self.subframe.place(x=0, y=190)
         lbf1=tk.Label(self.frame1,text="*SELECT DATE :",font=("Helvetica", 19,"bold"),bg='#CDCDC1',fg='blue')
         lbf1.place(x=300,y=50)
+        cvalues = ['01', '02', '03', '04', '05', '06', '07','08','09','10','11','12']
+        self.combobox = ttk.Combobox(self.frame1, values=cvalues, state="readonly")
+        self.combobox.config(height=5, width=28, font=('Arial', 12), foreground='blue')
+        self.combobox.bind("<<ComboboxSelected>>",self.motnhrec)
+        self.combobox.set("SELECT MONTH(monthly record)")
+        self.combobox.place(x=900,y=140)
 
         buttonf1 = tk.Button(self.frame1, text="SELECT",command=self.selectdate)
 
@@ -133,7 +144,7 @@ class main:
         self.cal = Calendar(self.frame1, selectmode = 'day',date_pattern='dd-MM-yy')
 
         self.cal.place(x=20,y=5)
-        pic= PhotoImage(file ="refresh.png")
+        pic= PhotoImage(file ="images2/refresh.png")
   
         # Resizing image to fit on button
         self.photo5 = pic.subsample(2,1)
@@ -144,7 +155,7 @@ class main:
 
 
 
-        pic2= PhotoImage(file ="print.png")
+        pic2= PhotoImage(file ="images2/print.png")
   
         # Resizing image to fit on button
         self.photo6 = pic2.subsample(4,3)
@@ -177,7 +188,7 @@ class main:
         self.treea.configure(yscrollcommand=self.scrollbar2.set)
 
         pen = self.collection_ref.get()
-        docs = sorted(pen, key=lambda doc: doc.get('num'))
+        docs = sorted(pen, key=lambda doc: doc.get('idd'))
 
         self.treea.place(x=0,y=0,height=585)
  
@@ -190,13 +201,27 @@ class main:
                 age = doc_data.get('name', '')
                 #print(age)
                 country = doc_data.get('inTime', '')
-                id=(doc_data.get('id', ''))
+                id=(doc_data.get('idd', ''))
                 dept=doc_data.get('outTime', '')
                 
-                self.treea.insert("", tk.END, values=(id,age, country,dept))
-                self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                
+                if str(country)=="null":
+                    #self.treea.insert("", tk.END, text=id, values=(age, country,dept),tag='gray')
 
-       
+                    self.treea.insert("", tk.END, values=(id,age, country,dept),tag='red')
+                    self.treea.tag_configure('red',foreground="red")
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                elif str(dept)!="null":
+                    #self.treea.insert("", tk.END, text=id, values=(age, country,dept),tag='gray')
+
+                    self.treea.insert("", tk.END, values=(id,age, country,dept),tag='green')
+                    self.treea.tag_configure('green',foreground="green")
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                                
+                else:
+                    self.treea.insert("", tk.END, values=(id,age, country,dept))
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+
                 
     def selectdate(self):
         selected_date = self.cal.get_date()
@@ -226,25 +251,67 @@ class main:
         query = str(self.entry.get())
         print(query)
         selections = []
-        
-        flag=0
-        
-        for child in self.treea.get_children():
-            if query in self.treea.item(child)['values']:   # compare strings in  lower cases.
-                #print(self.tree.item(child)['values'])
-                selections.append(child)
-                #print(selections)
-                self.treea.selection_set(selections)
-                self.treea.focus(selections)
-                flag=1
-                #self.refresh()
-                
+        flag = 0
 
-                
-        if(flag ==0) :
-            messagebox.showerror("Error", "EMPLOYEE NAME  DOESNT EXIST \nOR\n TYPE NAME CORRECTLY", icon=messagebox.ERROR)
-            #self.refresh()
+        for child in self.treea.get_children():
+            values = self.treea.set(child)
+            if any(query.lower() in str(value).lower() for value in values.values()):
+                selections.append(child)
+
+        if selections:
+            self.treea.selection_set(selections)
+            self.treea.focus(selections[-1])  # Focus on the last matching item
+            flag = 1
+
+        if flag == 0:
+            messagebox.showerror("Error", "EMPLOYEE NAME DOESN'T EXIST\nOR\nTYPE NAME CORRECTLY", icon=messagebox.ERROR)
+
         self.entry.delete(0, tk.END)
+
+    def motnhrec(self,v):
+        #print(v)
+        selected_month = str(self.combobox.get())  # July
+        #print(selected_month)
+
+        # Build a query to fetch the documents matching the selected month
+        query = self.db.collection('Attendance')
+        #print(1)
+        # Execute the query and iterate over the results
+        docs = query.stream()
+        #print(2)
+        flag=0
+        for doc in docs:
+            date = doc.id
+            #print("m=",date)
+            document_month = date.split('-')[1]
+
+            # Check if the document's month matches the selected month
+            if document_month == selected_month:
+                flag=1
+                #print(date)
+
+                data_ref = self.db.collection("Attendance").document(date)
+                data = data_ref.get().to_dict()
+
+                #print(data)             #print(array_data)
+
+                # Clear existing data in the TreeView if needed
+                self.treea.delete(*self.treea.get_children())
+
+                array_data1 = data["ids"]
+                array_data2 = data["names"]
+                array_data3 = data["inTime"]
+                array_data4 = data["outTime"]
+
+                for item1, item2, item3,item4 in zip(array_data1, array_data2, array_data3,array_data4):
+                    self.treea.insert("", "end", values=(item1, item2, item3,item4))
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+        if flag ==0:
+            messagebox.showerror("Error", "SORRY NO DATA EXIST FOR SELECTED MONTH", icon=messagebox.ERROR)
+        else:
+            messagebox.showinfo("INFO", f"DISPLAYING DATA FOR {selected_month} MONTH", icon=messagebox.INFO)
+
+
 
     def re2(self):
         self.set_frame_1() 
@@ -356,7 +423,7 @@ class main:
 
         # Retrieve all documents in the collection
         pen = self.collection_ref.get()
-        docs = sorted(pen, key=lambda doc: doc.get('num'))
+        docs = sorted(pen, key=lambda doc: doc.get('idd'))
  
                         
         for doc in docs:
@@ -367,7 +434,7 @@ class main:
                 age = doc_data.get('name', '')
                 #print(age)
                 country = doc_data.get('contact', '')
-                id=int(doc_data.get('id', ''))
+                id=int(doc_data.get('idd', ''))
                 dept=doc_data.get('department', '')
                 if id%2==0:
                     self.tree.insert("", tk.END, text=id, values=(age, country,dept),tag='gray')
@@ -390,7 +457,7 @@ class main:
         self.scrollbar.place(x=1150, y=0, height=665)  # Position the Scrollbar next to the Treeview using place
 
         self.tree.configure(yscrollcommand=self.scrollbar.set)
-        pic= PhotoImage(file ="refresh.png")
+        pic= PhotoImage(file ="images2/refresh.png")
   
         # Resizing image to fit on button
         self.photo3 = pic.subsample(2,1)
@@ -402,7 +469,7 @@ class main:
 
 
         #button5.config(width=8, height=9,font=("Arial", 20,'bold'))
-        pic2= PhotoImage(file ="print.png")
+        pic2= PhotoImage(file ="images2/print.png")
   
         # Resizing image to fit on button
         self.photo4 = pic2.subsample(4,3)
@@ -412,14 +479,25 @@ class main:
 
     def handle_select(self,event):
         selected_item = self.tree.focus()
-        #print(selected_item)
+        print(selected_item)
         item_text = self.tree.item(selected_item)["text"]
-        #print(str(item_text))
-        
-        det = self.db.collection("EmployeeDetails").document(str(item_text))
+        print(item_text)
+        print(int(item_text))
+        #det = self.db.collection("EmployeeDetails").document(str(item_text))
+        query = self.db.collection("EmployeeDetails").where("idd", "==", (item_text))
 
-        pen = det.get()
-        #print(pen)
+        # Fetch the documents that match the query
+        pen = query.get()
+        print(pen)
+
+        #pen = det.get()
+        
+
+        # Iterate over the matching documents
+        for doc in pen:
+            doc_data = doc.to_dict()
+            print(doc_data)
+            
 
         self.root2=tk.Toplevel()
         self.root2.geometry("1000x600")
@@ -428,11 +506,11 @@ class main:
         self.root2.resizable(False, False)
                         
         
-        doc_data = pen.to_dict()
+        #doc_data = pen.to_dict()
         e1 = doc_data.get('name', '')
                                                                     
         e2= doc_data.get('contact', '')
-        e3=int(doc_data.get('id', ''))
+        e3=int(doc_data.get('idd', ''))
         e4=doc_data.get('department', '')
         e5=doc_data.get('dateOfJoining', '')
         e6=doc_data.get('vehicle', '')
@@ -454,7 +532,7 @@ class main:
 
         self.firebase_image_url = e16
 
-        pic= PhotoImage(file ="Aadhar-Card.png")
+        pic= PhotoImage(file ="images2/Aadhar-Card.png")
   
 
         photo = pic.subsample(3,4)
@@ -656,7 +734,7 @@ class main:
         self.frame3.place(x=200, y=-2)
 
 
-        button = tk.Button(self.frame3,bg='black',width=210, height=320,image=self.cast,command=self.gsheet)
+        button = tk.Button(self.frame3,bg='black',width=210, height=320,image=self.cast)
         #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
         button.configure(relief="flat")
         button.place(x=80,y=35)
@@ -675,7 +753,7 @@ class main:
         'https://www.googleapis.com/auth/drive.file',
         'https://www.googleapis.com/auth/spreadsheets'
         ]
-        credentials1 = ServiceAccountCredentials.from_json_keyfile_name('cred.json', scope)
+        credentials1 = ServiceAccountCredentials.from_json_keyfile_name('cred/cred.json', scope)
         client = gspread.authorize(credentials1)
 
         # Source sheet details
@@ -768,7 +846,7 @@ class main:
         self.hide_frame()
         self.frame4.place(x=200, y=-2)
 
-        button = tk.Button(self.frame4,width=210, height=320,image=self.cast,command=self.view)
+        button = tk.Button(self.frame4,width=210, height=320,image=self.cast)
         #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
         button.configure(relief="flat")
         button.place(x=80,y=35)
@@ -776,7 +854,7 @@ class main:
         lb.place(x=80,y=359)
     def view(self):
 
-        '''db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
+        db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
 
         det = db2.collection("gsheet").document("casting")
 
@@ -785,23 +863,9 @@ class main:
         doc_data = pen.to_dict()
         e1 = doc_data.get('gsheet', '')
         #print(e1)
-        webbrowser.open(e1)'''
+        webbrowser.open(e1)
         # Define the selected month as a string
-        selected_month = '07'  # July
 
-        # Build a query to fetch the documents matching the selected month
-        query = self.db.collection('Attendance')
-        # Execute the query and iterate over the results
-        docs = query.stream()
-
-        for doc in docs:
-            date = doc.id
-            #print("m=",date)
-            document_month = date.split('-')[1]
-
-            # Check if the document's month matches the selected month
-            if document_month == selected_month:
-                print(date)
 
 
 
@@ -812,8 +876,190 @@ class main:
         self.frame3.place_forget()
         self.frame4.place_forget()
         
+class LoginPage:
+    def __init__(self, window):
+        self.window = window
+        self.window.geometry('950x600')
+        self.window.resizable(0, 0)
+        #self.window.state('zoomed')
+        self.window.title('Login Page')
+
+        # ========================================================================
+        # ============================background image============================
+        # ========================================================================
+        '''self.bg_frame = Image.open('images\\background1.png')
+        photo = ImageTk.PhotoImage(self.bg_frame)
+        self.bg_panel = Label(self.window, image=photo)
+        self.bg_panel.image = photo
+        self.bg_panel.pack(fill='both', expand='yes')
+        '''
+        # ====== Login Frame =========================
+        self.lgn_frame = Frame(self.window, bg='#040405', width=950, height=600)
+        self.lgn_frame.place(x=0, y=0)
+
+        # ========================================================================
+        # ========================================================
+        # ========================================================================
+        self.txt = "WELCOME"
+        self.heading = Label(self.lgn_frame, text=self.txt, font=('yu gothic ui', 25, "bold"), bg="#040405",
+                             fg='white',
+                             bd=5,
+                             relief=FLAT)
+        self.heading.place(x=80, y=25, width=350, height=50)
+
+        # ========================================================================
+        # ============ Left Side Image ================================================
+        # ========================================================================
+        self.side_image = Image.open('images\\vector.png')
+        photo = ImageTk.PhotoImage(self.side_image)
+        self.side_image_label = Label(self.lgn_frame, image=photo, bg='#040405')
+        self.side_image_label.image = photo
+        self.side_image_label.place(x=5, y=100)
+
+        # ========================================================================
+        # ============ Sign In Image =============================================
+        # ========================================================================
+        self.sign_in_image = Image.open('images\\hyy.png')
+        photo = ImageTk.PhotoImage(self.sign_in_image)
+        self.sign_in_image_label = Label(self.lgn_frame, image=photo, bg='#040405')
+        self.sign_in_image_label.image = photo
+        self.sign_in_image_label.place(x=620, y=130)
+
+        # ========================================================================
+        # ============ Sign In label =============================================
+        # ========================================================================
+        self.sign_in_label = Label(self.lgn_frame, text="Sign In", bg="#040405", fg="white",
+                                    font=("yu gothic ui", 17, "bold"))
+        self.sign_in_label.place(x=650, y=240)
+
+        # ========================================================================
+        # ============================username====================================
+        # ========================================================================
+        global mystr
+        mystr = StringVar()
+        
+        
+        self.username_label = Label(self.lgn_frame, text="Username", bg="#040405", fg="blue",
+                                    font=("yu gothic ui", 13, "bold"))
+        self.username_label.place(x=550, y=300)
+
+        self.username_entry = Entry(self.lgn_frame,textvariable=mystr, highlightthickness=0, relief=FLAT, bg="black", fg="#6b6a69",
+                                    font=("yu gothic ui ", 12, "bold"), insertbackground = '#6b6a69')
+        self.username_entry.place(x=580, y=335, width=270)
+
+        self.username_line = Canvas(self.lgn_frame, width=300, height=2.0, bg="#bdb9b1", highlightthickness=0)
+        self.username_line.place(x=550, y=359)
+        # ===== Username icon =========
+        self.username_icon = Image.open('images\\username_icon.png')
+        photo = ImageTk.PhotoImage(self.username_icon)
+        self.username_icon_label = Label(self.lgn_frame, image=photo, bg='#040405')
+        self.username_icon_label.image = photo
+        self.username_icon_label.place(x=550, y=332)
+
+        # ========================================================================
+        # ============================login button================================
+        # ========================================================================
+        '''self.lgn_button = Image.open('images\\btn1.png')
+        photo = ImageTk.PhotoImage(self.lgn_button)
+        self.lgn_button_label = Label(self.lgn_frame, image=photo, bg='#040405',height=60)
+        self.lgn_button_label.image = photo
+        self.lgn_button_label.place(x=520, y=450)'''
+        self.login = Button(self.window, text='LOGIN', font=("yu gothic ui", 13, "bold"), width=20, bd=0,
+                            bg='#3047ff', cursor='hand2', activebackground='#3047ff', fg='white',command=log)
+        self.login.place(x=570, y=460)
+        # ========================================================================
+        # ============================Forgot password=============================
+        # ========================================================================
+        '''self.forgot_button = Button(self.lgn_frame, text="Forgot Password ?",
+                                    font=("yu gothic ui", 13, "bold underline"), fg="white", relief=FLAT,
+                                    activebackground="#040405"
+                                    , borderwidth=0, background="#040405", cursor="hand2")
+        self.forgot_button.place(x=630, y=510)
+        # =========== Sign Up ==================================================
+        self.sign_label = Label(self.lgn_frame, text='No account yet?', font=("yu gothic ui", 11, "bold"),
+                                relief=FLAT, borderwidth=0, background="#040405", fg='white')
+        self.sign_label.place(x=550, y=560)'''
+
+        self.signup_img = ImageTk.PhotoImage(file='images\\register.png')
+        self.signup_button_label = Button(self.lgn_frame, image=self.signup_img, bg='#98a65d', cursor="hand2",
+                                          borderwidth=0, background="#040405", activebackground="#040405")
+        self.signup_button_label.place(x=670, y=555, width=111, height=35)
+
+        # ========================================================================
+        # ============================password====================================
+        # ========================================================================
+        global pystr
+        pystr = StringVar()
+        
+        self.password_label = Label(self.lgn_frame,text="Password", bg="#040405", fg="blue",
+                                    font=("yu gothic ui", 13, "bold"))
+        self.password_label.place(x=550, y=380)
+
+        self.password_entry = Entry(self.lgn_frame,textvariable=pystr, highlightthickness=0, relief=FLAT, bg="#040405", fg="#6b6a69",
+         ##
+        font=("yu gothic ui", 12, "bold"), show="*", insertbackground = '#6b6a69')
+        self.password_entry.place(x=580, y=412, width=244)
+
+        self.password_line = Canvas(self.lgn_frame, width=300, height=2.0, bg="#bdb9b1", highlightthickness=0)
+        self.password_line.place(x=550, y=440)
+        # ======== Password icon ================
+        self.password_icon = Image.open('images\\password_icon.png')
+        photo = ImageTk.PhotoImage(self.password_icon)
+        self.password_icon_label = Label(self.lgn_frame, image=photo, bg='#040405')
+        self.password_icon_label.image = photo
+        self.password_icon_label.place(x=550, y=414)
+        # ========= show/hide password ==================================================================
+        self.show_image = ImageTk.PhotoImage \
+            (file='images\\show.png')
+
+        self.hide_image = ImageTk.PhotoImage \
+            (file='images\\hide.png')
+
+      #  self.show_button = Button(self.lgn_frame, image=self.show_image, command=self.show, relief=FLAT,
+       #                           activebackground="white"
+        #                          , borderwidth=0, background="white", cursor="hand2")
+       # self.show_button.place(x=860, y=420)
+
+    def show(self):
+        self.hide_button = Button(self.lgn_frame, image=self.hide_image, command=self.hide, relief=FLAT,
+                                  activebackground="white"
+                                  , borderwidth=0, background="white", cursor="hand2")
+        self.hide_button.place(x=860, y=420)
+        self.password_entry.config(show='')
+
+    def hide(self):
+        self.show_button = Button(self.lgn_frame, image=self.show_image, command=self.show, relief=FLAT,
+                                  activebackground="white"
+                                  , borderwidth=0, background="white", cursor="hand2")
+        self.show_button.place(x=860, y=420)
+        self.password_entry.config(show='*')
+
+
+def page():
+    global window
+    window = Tk()
+    p1 = PhotoImage(file = 'images2/logo.png')
+  
+    window.iconphoto(True, p1)
+    LoginPage(window)
+    window.mainloop()
+def log():
+    pas=str(pystr.get())
+
+    username=str(mystr.get())
 
     
+
+    if username=="admin@gmail.com"and pas=="123456":
+        messagebox.showinfo("Success", "Login successful!")
+        window.destroy()
+        obj=main()
+        obj.new()
+    else:
+        messagebox.showerror("Error", "Invalid email or password")
+
+    
+
+
 if __name__ == '__main__':
-    obj = main()
-    obj.new()
+    page()
