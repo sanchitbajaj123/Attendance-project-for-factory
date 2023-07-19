@@ -4,7 +4,7 @@ from tkinter import messagebox
 import tkinter as tk
 from tkcalendar import Calendar
 import tkinter as tk
-from PIL import ImageTk, Image,ImageGrab
+from PIL import ImageTk, Image
 import tkinter.font as font
 import firebase_admin
 from firebase_admin import credentials
@@ -13,14 +13,16 @@ from tkinter import ttk
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import webbrowser
-from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
-#import gspread
-#from oauth2client.service_account import ServiceAccountCredentials
-#from googleapiclient.discovery import build
-import webbrowser
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
 import datetime
+import babel.numbers
+import pygsheets
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 
 
 
@@ -70,13 +72,17 @@ class main:
         button3.config(width=19, height=2, font=("Arial", 12,'bold'))
         button3.place(x=3,y=330)
 
-        button3 = tk.Button(self.sidefr, text="GENERATE\nGOOGLE SHEETS",command=self.frame_3)
 
 # Configure the button's appearance
         button4 = tk.Button(self.sidefr, text="VIEW\nGOOGLE SHEETS",command=self.frame_4)
 
         button4.config(width=19, height=2, font=("Arial", 12,'bold'))
         button4.place(x=4,y=395)
+
+        button5 = tk.Button(self.sidefr, text="CNC OUT \nSHEET ")
+
+        button5.config(width=19, height=2, font=("Arial", 12,'bold'))
+        button5.place(x=5,y=460)
 # Place the button in the window
         
         image = Image.open("images2/user.png")
@@ -163,17 +169,20 @@ class main:
         button5.place(x=1170,y=280)
         
         self.treea = ttk.Treeview(self.subframe,show="tree")
-        self.treea["columns"] = ("ID","NAME","IN","OUT")
+        self.treea["columns"] = ("ID","NAME","DATE","IN","OUT")
         self.treea.column("#0", width=0)
         #self.tree.column("column1", width=200)
         self.treea.column("ID", width=50,anchor="center")
-        self.treea.column("NAME", width=373,anchor="center")
-        self.treea.column("IN", width=373,anchor="center")
-        self.treea.column("OUT", width=373,anchor="center")
+        self.treea.column("NAME", width=280,anchor="center")
+        self.treea.column("DATE", width=280,anchor="center")
+
+        self.treea.column("IN", width=240,anchor="center")
+        self.treea.column("OUT", width=300,anchor="center")
         #self.treea.heading("#0", text="ID")
         #self.tree.heading("column1", text="ID")
         self.treea.heading("ID", text="ID",anchor="center")
         self.treea.heading("NAME", text="NAME",anchor="center")
+        self.treea.heading("DATE", text="DATE",anchor="center")        
         self.treea.heading("IN", text="IN",anchor="center")
         self.treea.heading("OUT", text="OUT",anchor="center")
         self.treea.tag_configure("heading", font=("Arial", 20, "bold"))
@@ -203,37 +212,44 @@ class main:
                 country = doc_data.get('inTime', '')
                 id=(doc_data.get('idd', ''))
                 dept=doc_data.get('outTime', '')
+                date=doc_data.get('date', '')
                 
                 
                 if str(country)=="null":
                     #self.treea.insert("", tk.END, text=id, values=(age, country,dept),tag='gray')
 
-                    self.treea.insert("", tk.END, values=(id,age, country,dept),tag='red')
+                    self.treea.insert("", tk.END, values=(id,age,date, country,dept),tag='red')
                     self.treea.tag_configure('red',foreground="red")
-                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------','----------------------'),tag='gray')
                 elif str(dept)!="null":
                     #self.treea.insert("", tk.END, text=id, values=(age, country,dept),tag='gray')
 
-                    self.treea.insert("", tk.END, values=(id,age, country,dept),tag='green')
+                    self.treea.insert("", tk.END, values=(id,age,date, country,dept),tag='green')
                     self.treea.tag_configure('green',foreground="green")
-                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------','----------------------'),tag='gray')
                                 
                 else:
-                    self.treea.insert("", tk.END, values=(id,age, country,dept))
-                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                    self.treea.insert("", tk.END, values=(id,age,date, country,dept))
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------','----------------------'),tag='gray')
 
                 
     def selectdate(self):
         selected_date = self.cal.get_date()
+        print(selected_date)
         
         date_obj = datetime.datetime.strptime(selected_date, "%d-%m-%y")
         formatted_date = date_obj.strftime("%d-%m-%Y")
+        print(formatted_date)
         
         data_ref = self.db.collection("Attendance").document(formatted_date)
         data = data_ref.get().to_dict()
 
+        date=data.get('date', '')
         
-        #print(array_data)
+
+
+
+
 
         # Clear existing data in the TreeView if needed
         self.treea.delete(*self.treea.get_children())
@@ -242,10 +258,15 @@ class main:
         array_data2 = data["names"]
         array_data3 = data["inTime"]
         array_data4 = data["outTime"]
+        
 
         for item1, item2, item3,item4 in zip(array_data1, array_data2, array_data3,array_data4):
-            self.treea.insert("", "end", values=(item1, item2, item3,item4))
-            self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+            self.treea.insert("", "end", values=(item1, item2,date, item3,item4))
+            self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------','---------------------------------'),tag='gray')
+        remark=data["remarks"]
+        for r in remark:
+
+            messagebox.showinfo("REMARKS", r, icon=messagebox.INFO)
 
     def search2(self):
         query = str(self.entry.get())
@@ -260,8 +281,9 @@ class main:
 
         if selections:
             self.treea.selection_set(selections)
-            self.treea.focus(selections[-1])  # Focus on the last matching item
+            selected_item=self.treea.focus(selections[-1])  # Focus on the last matching item
             flag = 1
+            self.treea.see(selected_item)
 
         if flag == 0:
             messagebox.showerror("Error", "EMPLOYEE NAME DOESN'T EXIST\nOR\nTYPE NAME CORRECTLY", icon=messagebox.ERROR)
@@ -269,6 +291,7 @@ class main:
         self.entry.delete(0, tk.END)
 
     def motnhrec(self,v):
+        self.treea.delete(*self.treea.get_children())
         #print(v)
         selected_month = str(self.combobox.get())  # July
         #print(selected_month)
@@ -292,11 +315,12 @@ class main:
 
                 data_ref = self.db.collection("Attendance").document(date)
                 data = data_ref.get().to_dict()
+                #date=data.get('date', '')
 
-                #print(data)             #print(array_data)
+                #print(data)             
 
                 # Clear existing data in the TreeView if needed
-                self.treea.delete(*self.treea.get_children())
+                
 
                 array_data1 = data["ids"]
                 array_data2 = data["names"]
@@ -304,8 +328,9 @@ class main:
                 array_data4 = data["outTime"]
 
                 for item1, item2, item3,item4 in zip(array_data1, array_data2, array_data3,array_data4):
-                    self.treea.insert("", "end", values=(item1, item2, item3,item4))
-                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------'),tag='gray')
+                    #print(item1)
+                    self.treea.insert("", "end", values=(item1, item2,date, item3,item4))
+                    self.treea.insert("", tk.END, values=('---------------------------------','-------------------------------','--------------------------------','----------------------------------','---------------------------------'),tag='gray')
         if flag ==0:
             messagebox.showerror("Error", "SORRY NO DATA EXIST FOR SELECTED MONTH", icon=messagebox.ERROR)
         else:
@@ -734,7 +759,7 @@ class main:
         self.frame3.place(x=200, y=-2)
 
 
-        button = tk.Button(self.frame3,bg='black',width=210, height=320,image=self.cast)
+        button = tk.Button(self.frame3,bg='black',width=210, height=320,image=self.cast,command=self.gsheet)
         #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
         button.configure(relief="flat")
         button.place(x=80,y=35)
@@ -822,6 +847,14 @@ class main:
             'emailAddress': 'SupervisorBajaj@gmail.com'  # Replace with the desired collaborator email address
         }
         ).execute()
+        drive_service.permissions().create(
+        fileId=new_document_id,
+        body={
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': 'harjot90414singh@gmail.com'  # Replace with the desired collaborator email address
+        }
+        ).execute()
 
         #print('Sheet copied and shared successfully!')
         new_sheet_url = f'https://docs.google.com/spreadsheets/d/{new_document_id}'
@@ -830,7 +863,7 @@ class main:
 
         # Specify the collection and document ID
         collection_name = 'gsheet'
-        document_id = 'casting'
+        document_id = str(current_date)
 
         # Specify the string data
         string_data = new_sheet_url
@@ -846,7 +879,7 @@ class main:
         self.hide_frame()
         self.frame4.place(x=200, y=-2)
 
-        button = tk.Button(self.frame4,width=210, height=320,image=self.cast)
+        button = tk.Button(self.frame4,width=210, height=320,image=self.cast,command=self.view)
         #button4.config(width=8, height=9,font=("Arial", 20,'bold'))
         button.configure(relief="flat")
         button.place(x=80,y=35)
@@ -854,18 +887,124 @@ class main:
         lb.place(x=80,y=359)
     def view(self):
 
+        self.root3=tk.Toplevel()
+        self.root3.geometry("200x200")
+        self.root3.title("CASTING SHEET")
+        self.root3.configure(bg="#F2F2F2")
+        self.root3.resizable(False, False)
+        lb=Label(self.root3,text="ENTER DATE",fg='blue')
+        current_date = str(datetime.date.today())
+
+        self.enc=Entry(self.root3)
+        self.enc.insert(0, current_date)
+        lb.pack()
+        self.enc.pack()
+        button1 = tk.Button(self.root3, text="VIEW",fg='blue',command=self.viewsheet)
+        button1.config( font=("Arial", 12,'bold'))
+        button1.pack()
+    def viewsheet(self):
         db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
 
-        det = db2.collection("gsheet").document("casting")
+        date = str(self.enc.get())
+
+        det = db2.collection("gsheet").document(date)
+
+        pen = det.get()
+        
+        doc_data = pen.to_dict()
+        try:
+            e1 = doc_data.get('gsheet', '')
+
+            webbrowser.open(e1)
+        except:
+            messagebox.showerror("Error", "SHEET NOT FOUND\n FOR SELECTED DATE")
+
+
+    def cncout(self):
+
+        '''self.root3=tk.Toplevel()
+        self.root3.geometry("200x200")
+        self.root3.title("PRINT")
+        self.root3.configure(bg="#F2F2F2")
+        self.root3.resizable(False, False)
+        lb=Label(self.root3,text="ENTER ROW NUMBER",fg='blue')
+        self.enc=Entry(self.root3)
+        lb.pack()
+        self.enc.pack()
+        button1 = tk.Button(self.root3, text="PRINT",fg='blue',command=self.cncprint)
+
+# Configure the button's appearance
+        button1.config( font=("Arial", 12,'bold'))
+        button1.pack()
+        
+        db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
+
+        det = db2.collection("gsheet").document("out")
 
         pen = det.get()
         
         doc_data = pen.to_dict()
         e1 = doc_data.get('gsheet', '')
         #print(e1)
-        webbrowser.open(e1)
+        webbrowser.open(e1)'''
         # Define the selected month as a string
 
+    def cncprint(self):
+
+        db2 = firestore.client(app=firebase_admin.get_app(name='second-app'))
+
+        det = db2.collection("gsheet").document("out")
+
+        pen = det.get()
+        
+        doc_data = pen.to_dict()
+        e1 = doc_data.get('gid', '')
+        scope = ['https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive']
+
+        # Authorize the client using the credentials
+        client = pygsheets.authorize(service_file='cred/cred.json')
+
+        # Open the Google Sheet by its title or URL
+        spreadsheet = client.open_by_key(e1)
+
+        # Select a specific worksheet within the Google Sheet (optional)
+        worksheet = spreadsheet.sheet1
+
+        # Specify the row number to retrieve
+        row_number = str(self.enc.get())
+        row_number=int(row_number)  # Change this to the desired row number
+
+        # Retrieve the column names and row data
+        column_names = worksheet.get_row(1, include_tailing_empty=False)
+        row_data = worksheet.get_row(row_number, include_tailing_empty=False)
+
+        # Create a PDF document
+        pdf_path = 'output.pdf'
+        pdf = canvas.Canvas(pdf_path)
+
+        # Set the font size and leading (line spacing)
+        font_size = 12
+        leading = 14
+
+        # Set the initial y-coordinate (top of the page)
+        y = 800
+
+        # Add the row data to the PDF
+        for cell_value in column_names:
+            pdf.setFont('Helvetica', font_size)
+            pdf.drawString(50, y, cell_value)
+            y -= leading
+
+        y=800
+        for cell_value2 in row_data:
+            pdf.setFont('Helvetica', font_size)
+            pdf.drawString(150, y, cell_value2)
+            y -= leading              
+
+        # Save and close the PDF document
+        pdf.save()
+        webbrowser.open_new(pdf_path)
 
 
 
@@ -1057,6 +1196,7 @@ def log():
         obj.new()
     else:
         messagebox.showerror("Error", "Invalid email or password")
+
 
     
 
