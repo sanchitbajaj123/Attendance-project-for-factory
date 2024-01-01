@@ -831,14 +831,7 @@ class main:
         #print('Sheet copied successfully!')
         #print('New sheet ID:', new_document_id)
         # Share the copied sheet for collaboration
-        drive_service.permissions().create(
-        fileId=new_document_id,
-        body={
-            'type': 'user',
-            'role': 'writer',
-            'emailAddress': 'sanchitbajaj2003@gmail.com'  # Replace with the desired collaborator email address
-        }
-        ).execute()
+
         drive_service.permissions().create(
         fileId=new_document_id,
         body={
@@ -847,14 +840,7 @@ class main:
             'emailAddress': 'SupervisorBajaj@gmail.com'  # Replace with the desired collaborator email address
         }
         ).execute()
-        drive_service.permissions().create(
-        fileId=new_document_id,
-        body={
-            'type': 'user',
-            'role': 'writer',
-            'emailAddress': 'harjot90414singh@gmail.com'  # Replace with the desired collaborator email address
-        }
-        ).execute()
+
 
         #print('Sheet copied and shared successfully!')
         new_sheet_url = f'https://docs.google.com/spreadsheets/d/{new_document_id}'
